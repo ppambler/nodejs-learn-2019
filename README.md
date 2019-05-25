@@ -10,6 +10,8 @@
 
 **➹：**[如何系统地学习Node.js？ - 知乎](https://www.zhihu.com/question/21567720)
 
+**➹：**[nswbmw/N-blog: 《一起学 Node.js》](https://github.com/nswbmw/N-blog)
+
 ## ★目录
 
 - [01-nodejs入门](./01-入门/01-nodejs入门.md)
