@@ -200,7 +200,7 @@ console.log(xxx.toString())
 如：
 
 1. 访问文件的路径
-2. 完文件里边添加内容
+2. 往文件里边添加内容
 3. 改变文件的执行权限
 4. 改变文件拥有者
 5. 复制文件
@@ -210,11 +210,45 @@ console.log(xxx.toString())
 
 总之，你要做的事，就是把文档看完，然后你的nodejs也就入门了
 
-所有说这所谓的入门。其实就是看你有没有熟悉这些API
+所以说这所谓的入门。其实就是看你有没有熟悉这些API
 
-像JavaScript一样，对于nodejs来说，你已经学会了JavaScript，那么剩下的你要学的只有API了
+像JavaScript一样，对于nodejs来说，你已经学会了JavaScript，那么剩下的**你要学的只有API**了
 
+### ◇ http 模块
 
+这个模块干嘛的呢？——还记得之前用nodejs写的http服务吗？
+
+那么如何用nodejs写一个提供http服务的程序？
+
+1. 你得有一个server（看文档）
+2. 有了server，那就创建一个server实例呗！
+3. 实例有了，那就监听
+4. 然而还是不会写，[Using node.js as a simple web server - Stack Overflow](https://stackoverflow.com/questions/6084360/using-node-js-as-a-simple-web-server/13635318)
+
+简单的http server：
+
+```js
+var http = require('http');
+var fs = require('fs');
+var index = fs.readFileSync('index.html');
+
+http.createServer(function (req, res) {
+  // 如果是 'text/plain'拿到的是咩有解析HTML的字符串源码了
+  // res.writeHead(200, {'Content-Type': 'text/plain'});
+  res.writeHead(200, {'Content-Type': 'text/html'});
+  res.end(index);
+}).listen(9999);
+
+// log提示该server正在运行，不然咩有提示的话，用户可是不知道server正在跑
+console.log('正在监听9999端口……')
+```
+
+完善：
+
+1. index.html内容修改了，刷新页面不会跟着修改
+2. ……
+
+当然，你要完善它的话，你可以通过log一下req和res，看看都传了什么实参过来！
 
 
 
