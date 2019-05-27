@@ -250,6 +250,224 @@ console.log('正在监听9999端口……')
 
 当然，你要完善它的话，你可以通过log一下req和res，看看都传了什么实参过来！
 
+其实，上边的例子，不是很纯粹，不利于学习，毕竟引入了其它不明所以的API，所以，我们只需要弄个「壳」即可：
+
+```js
+var http = require('http');
+
+let server = http.createServer(function (req, res) {
+
+})
+
+server.listen(9999);
+console.log('正在监听9999端口……')
+```
+
+> <http://nodejs.cn/api/http.html#http_class_http_clientrequest>
+
+接下来往壳里边填充东西：
+
+1. 通过request，获取路径：
+
+   于是，查找了有关http的req[官方文档](http://nodejs.cn/api/http.html)
+
+   结果。没找到，所以我只好求助Stack Overflow了：「nodejs request path stackoverflow」
+
+   **➹：**[javascript - Node.js: get path from the request - Stack Overflow](https://stackoverflow.com/questions/18931452/node-js-get-path-from-the-request/18931706)
+
+   可以看到最高赞的答案：
+
+   ![1558926151172](img/01/1558926151172.png)
+
+2. 根据拿到的路径发出响应：
+
+   这次不用看文档了，直接搜索Stack Overflow即可！
+
+   由于搜索关键字的缘故，大都是与express相关的内容，于是你可以在搜索关键字后边加个 `-express`，那么就会搜索到有与express相关的内容了
+
+   或许是英文的缘故，我还是用中文关键字好了，看人家博客方便得多：
+
+   **➹：**[Node.js http模块 设置响应头 - jimjiayu - CSDN博客](https://blog.csdn.net/zhongshijun521/article/details/60139013)
+
+   **看了这些例子之后，你就去看官网看看那些你没有用过的API，如果该API没有例子的话，你可以这样：**
+
+   如 `response.write`这个API，毕竟这肯定有人不知道用，然后就问出来了，而问了肯定就有人回答：「nodejs response.write stackoverflow」
+
+   ![1558927643257](img/01/1558927643257.png)
+
+   **➹：**[node.js - Node Js problems with response.write - Stack Overflow](https://stackoverflow.com/questions/6068820/node-js-problems-with-response-write)
+
+   可有：
+
+   ![1558927758459](img/01/1558927758459.png)
+
+   可见，需要设置响应状态码、响应头（可选）、响应体（可选）、响应结束（不写页面一直转）
+
+   所以，目前代码如下：
+
+   ```js
+   var http = require('http');
+   
+   let server = http.createServer(function (req, res) {
+     console.log(req.url) //http://localhost:9999/fuck，该值为/fuck
+     res.statusCode = '201'
+     res.write('hello')
+     res.end()
+   })
+   
+   server.listen(9999);
+   console.log('正在监听9999端口……')
+   ```
+
+   测试效果：
+
+   ![1558928115522](img/01/1558928115522.png)
+
+### ◇小结
+
+以上就是nodejs的学习方法了，即不停地抄代码，然后运行理解，如此循环；还有就是如果文档上咩有关于xxx API的使用例子，那就去Stack Overflow上抄！
+
+总之，以上这两个模块基本上就靠这个学习方法了。没有什么特殊技巧，你只要不停地去试这个API怎么用就行了！就好像你平时在写JavaScript那样，如DOM API，怎么获取爸爸，怎么获取儿子，怎么添加儿子，怎么删除儿子等等……
+
+### ◇一个重要的心理障碍知识
+
+![1558930373156](img/01/1558930373156.png)
+
+你总在期待芳芳能不能讲一下，小程序、react、angular、nodejs、koa等知识
+
+你觉得自己看文档学不会，所以根本就不会去看。至此，你有了这样的需求——等着芳芳教我
+
+然而在程序界里边有这么一种说法「**做程序员的话，如果你等着别人去教你一些新技术的话，那么你会死的，即很快就会被这个行业所淘汰！**」
+
+其实，对于所有的新技术学习，你都按照芳芳的那个套路（CRM）来学习即可！没要啥知识，只需要不停地踩坑就完了！你坑踩得越多，你就越厉害！当你把所有坑踩完了，那么你就是大师了，就像是张鑫旭大佬学习CSS那样！
+
+回过头来，什么叫小程序的程序员呢？——**就是哪里会出bug，你全部都踩过了！那么你就无敌了！显然，这就会有人要你了！**
+
+或许你又会说「我没有看文档，你直接告诉我怎么写，这不就完了吗？这可谓省时省力啊！」
+
+这可不可能啊！因为你不踩坑的话，那你学到的只是一种写法啊！一种场景需求啊！而老师不可能把每一种场景需求、每一种写法都面面俱到的讲给了听啊！这可不是一日为师，终生为师啊！
+
+> 我的学习姿势是，了解了基本的语法知识以及相关的基础API知识和核心知识（如nodejs的event loop）之后，直接就开始撸项目了！通过做一个完整得项目来学习那些API之类的！
+>
+> 这篇博客写完之后，我就开始撸nodejs项目了。如果有现成的项目文档教程得话，我会先看项目文档，然后再去看一些项目教学视频！
+
+总之，**程序员的大部分时间就是把坑踩一下，然后以后避免就行了！**
+
+## ★学习两个框架
+
+> Koa和Express
+
+### ◇Express
+
+Express怎么用呢？其实根据之前所学的知识，已经学过了呀，只不过没有看文档而已！
+
+那么这该怎么学呢？
+
+同样地，去搜索一下中文文档即可！
+
+<https://expressjs.com/zh-cn/>
+
+> 请注意域名
+
+由于中文文档可能已经过时了，所以就去看英文文档：
+
+<https://expressjs.com/>
+
+使用：
+
+1. 安装：
+
+   ```bash
+   mkdir express-demo
+   cd express-demo
+   # 为应用程序创建 package.json 文件，默认，一直回车即可！
+   npm init
+   # 保存在依赖项列表里边的，--save参数表示将该模块写入dependencies属性
+   npm install express --save
+   # 要临时安装Express而不将其添加到依赖关系列表中，请执行以下操作:
+   npm install express --no-save
+   ```
+
+   目前有哪些文件和目录：
+
+   ![1558936343379](img/01/1558936343379.png)
+
+2. 使用例子——写个[hello world](https://expressjs.com/en/starter/hello-world.html)：
+
+   创建个server.js文件，然后把下边代码拷贝进去，直接运行，运行成功后，理解一下代码，然后修改一下代码再运行一遍呗！
+
+   > 注意别抄错代码了，不然没有预期的效果，就会怀疑文档是不是写得很烂？或者认为自己根本就看不懂文档？
+
+   ```js
+   const express = require('express')
+   const app = express()
+   const port = 3000
+   
+   app.get('/', (req, res) => res.send('Hello World!'))
+   
+   app.listen(port, () => console.log(`Example app listening on port ${port}!`))
+   ```
+
+   ![1558936785101](img/01/1558936785101.png)
+
+   运行效果：
+
+   ![1558937056868](img/01/1558937056868.png)
+
+   还有状态码也不用设置了！
+
+   > 我稍微看了一下express.js这个文件：
+   >
+   > ![1558937411155](img/01/1558937411155.png)
+   >
+   > 感觉这个框架用了各种设计模式来组织代码！讲真，我是真得不懂怎么看这些源码！我只知道，一般都是先看init这个方法的！然后根据这个init顺藤摸瓜去看！
+   >
+   > ![1558938027324](img/01/1558938027324.png)
+
+   
+
+   
+
+   
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ## ★总结
@@ -266,9 +484,91 @@ console.log('正在监听9999端口……')
 
 **➹：**[Buffer对象 -- JavaScript 标准参考教程（alpha）](https://javascript.ruanyifeng.com/nodejs/buffer.html)
 
+### ②关于package.json文件？
+
+每个项目的**根目录**下面，一般都有一个`package.json`文件，定义了这个项目所需要的各种模块（库，框架之类的），以及项目的配置信息（比如名称、版本、许可证等元数据）。`npm install`命令根据这个配置文件，自动下载所需的模块，也就是**配置项目所需的运行和开发环境**。
+
+所以说，这不是写nodejs项目的专属文件！你写JavaScript时为web应用也需要！
+
+**➹：**[package.json文件 -- JavaScript 标准参考教程（alpha）](https://javascript.ruanyifeng.com/nodejs/packagejson.html)
+
+### ③关于node_modules这个名字？
+
+有时候我在想「所写的前端项目，有这个node_modules目录存在，那么我这个项目岂不是node项目吗？」
+
+> 用yarn就好了！
+
+毕竟npm是nodejs的包管理器（package manager）
+
+所以叫node_modules也就无可厚非了！
+
+但是即便不是做nodejs项目的开发，如做前端项目的开发，安装vue等框架、jQuery等库……npm也是极好的JavaScript的包管理器
+
+此时我有了个疑问「nodejs的包管理器和JavaScript的包管理器，这二者指的是同一个东西吗？」
+
+> 其实我通过npm官网可知，它是个必不可少的JavaScript开发工具，用于帮助我们构建功能强大的Web应用程序。
+
+在解答这个问题之前，你需要知道什么是包管理器？
+
+把包管理器拆分成「包」和「管理器」来看：
+
+什么是包？
+
+> 包是一段**可以复用的代码**，这段代码可以从全局注册表（[**NPM registry**](https://www.npmjs.com/)）「**npm官网，可以当做是各种包的资料库**」下载到开发者的本地环境。每个包可能会，也可能不会依赖于别的包。
+
+什么是包管理器？
+
+> 简单地说，包管理器是一段代码，它可以让你管理**依赖**（你或者他人写的外部代码），你的项目需要这些依赖来正确运行。
+
+依赖？——扁平依赖和嵌套依赖
+
+扁平依赖：
+
+![1558940276806](img/01/1558940276806.png)
+
+嵌套依赖：
+
+![1558940471579](img/01/1558940471579.png)
 
 
 
+我知道JavaScript使用包，需要import、export
+
+而nodejs则是require
+
+**➹：**[[译]JavaScript 包管理器工作原理简介 - 前端 - 掘金](https://juejin.im/entry/5835a2c0c59e0d005772a62f)
+
+**➹：**[Introduction to JavaScript Package Managers – Nik Sudan – Medium](https://medium.com/@niksudan/introduction-to-javascript-package-managers-ca9610cda500)
+
+**➹：**[ php - npm install的目录“node_modules”能不能改个名字？ - SegmentFault 思否](https://segmentfault.com/q/1010000011881944)
+
+**➹：**[如何评价node_modules的设计？ - 知乎](https://www.zhihu.com/question/36697792)
+
+**➹：**[如何将一张照片转变成扁平化风格的图片？ - 知乎](https://www.zhihu.com/question/56882801)
+
+另一种关于包的解释：
+
+> JS模块的基本单位是单个JS文件，但复杂些的模块往往由多个子模块组成。为了便于管理和使用，我们可以把由多个子模块组成的大模块称做`包`，并把所有子模块放在同一个目录里。
+>
+> 在组成一个包的所有子模块中，需要有一个入口模块，入口模块的导出对象被作为包的导出对象
+
+所以说，一个包里边的所有子模块同样会存在所谓的「扁平依赖（只有同级的子模块依赖）」和「嵌套依赖（存在嵌套的子模块依赖）」，只是它们并没有版本划分而已，都是一个版本的事儿！假如某个子模块依赖其它包，那就存在安全性、稳定性问题了。
+
+![1558941004638](img/01/1558941004638.png)
+
+> 这图总体上看是包的嵌套依赖
+>
+> 从包里边看：包1是扁平依赖（4.js还是在一级目录），包2是嵌套依赖！总之存在多级目录，且多级目录里边存在子模块被其它非同级目录下的子模块所引用就是嵌套依赖
+
+**➹：**[七天学会NodeJS](https://nqdeng.github.io/7-days-nodejs/#2.2)
+
+### ④关于各种包的index.js文件？
+
+index.js是各种包默认的入口文件
+
+这个在你npm init时会涉及到：
+
+![1558937935846](img/01/1558937935846.png)
 
 
 
