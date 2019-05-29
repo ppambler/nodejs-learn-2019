@@ -3,6 +3,10 @@ const app = express()
 const port = 9999
 const path = require('path')
 
+// app.use(express.static('public'))
+// app.use('/static', express.static(__dirname + '/public'));
+app.use('/public', express.static(__dirname + '/public'));
+
 // app.get('/', (req, res) => res.send('Hello World!'))
 app.get('/xxx', (req, res) => res.send('我是/xxx'))
 
