@@ -619,7 +619,7 @@ koa的作者和Express的作者是同一个人
 
 4. 由于我们是前端，所以咩有必要说要深入学习nodejs，当然，想玩一玩也是可以的；当面试官问你有关nodejs的知识时，你说写过hello world！就可以了！
 
-5. 所有的demo： [demo](/01-入门/node-demo/01)
+5. 所有demo： [demo](https://github.com/ppambler/nodejs-learn-2019/tree/master/01-%E5%85%A5%E9%97%A8/node-demo/01)
 
 ## ★ 把nodejs应用部署到HeroKu上
 
