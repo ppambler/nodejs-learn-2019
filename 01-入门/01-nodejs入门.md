@@ -623,7 +623,11 @@ koa的作者和Express的作者是同一个人
 
 ## ★ 把nodejs应用部署到HeroKu上
 
-> [Getting Started on Heroku with Node.js - Heroku Dev Center](https://devcenter.heroku.com/articles/getting-started-with-nodejs)
+> 我们想把自己写的express代码放到服务器上，而且我想要免费的！
+>
+> Heroku就可以免费地帮我们弄个nodejs server，学习这个工具的使用就像使用hexo搭建博客一样的，所以自己去看文档和博客即可！
+>
+> **➹：**[Getting Started on Heroku with Node.js - Heroku Dev Center](https://devcenter.heroku.com/articles/getting-started-with-nodejs)
 
 1. 注册
 
@@ -669,6 +673,8 @@ koa的作者和Express的作者是同一个人
 
 
 ## ★总结
+
+- 如果可以，就去看文档，不要怂，直接干！
 
 ## ★Q&A
 
