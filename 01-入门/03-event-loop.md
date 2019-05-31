@@ -20,7 +20,7 @@ typora-copy-images-to: img\03
 
 然而大部分文章，芳芳看了都是错的！甚至阮一峰写的都是错的！
 
-很多人都不知道Event Loop是什么，但是其实官方文档已经讲得很清楚了，你稍微看一下官方的源代码，都能搞清楚Event Loop到底是什么鬼！
+很多人都不知道Event Loop是什么，但是其实官方文档已经讲得很清楚了，你稍微看一下官方给出的例子代码，都能搞清楚Event Loop到底是什么鬼东西了！
 
 **在理解什么是Event Loop之前，先来说说什么是Nodejs？**
 
@@ -74,6 +74,22 @@ typora-copy-images-to: img\03
 **➹：**[主流浏览器内核介绍（前端开发值得了解的浏览器内核历史） - 前端 - 掘金](https://juejin.im/entry/57ff3cea0e3dd90057e5f25e)
 
 **➹：**[认识 V8 引擎 - 知乎](https://zhuanlan.zhihu.com/p/27628685)
+
+> 在nodejs下，写JavaScript代码的时候，很多时候我们需要require某个内置模块，或者一些第三方提供的包，就拿内置模块来说，使用的还是JavaScript代码，但是这些代码却具有可以让我们读取文件、启动http server等这样的能力，我们之前在浏览器跑的JavaScript的代码并不具备这样的能力，但是nodejs的存在却让我们看到了JavaScript这门语言在不同平台下，所具备的能力是不同的！你JavaScript在chrome这个平台下可以操作DOM，但不能读取文件等；你JavaScript在nodejs这个平台下可以读取文件等，但不能操作DOM，当然，下边这个库似乎可以让在nodejs环境运行的JavaScript具备操作的DOM的能力：
+>
+> **➹：**[cheerio - 为服务器特别定制的，快速、灵活、实施的jQuery核心实现](https://cheerio.js.org/)
+>
+> **➹：**[通读cheerio API - CNode技术社区](https://cnodejs.org/topic/5203a71844e76d216a727d2e)
+>
+> **➹：**[使用node.js cheerio抓取网页数据 - 奇舞团博客](https://75team.com/post/%E4%BD%BF%E7%94%A8node-js-cheerio%E6%8A%93%E5%8F%96%E7%BD%91%E9%A1%B5%E6%95%B0%E6%8D%AE.html)
+>
+> 或许我应该把编程语言脱离某个平台来看，因为这样一来，我学习编程语言的目的就是，找出所有编程语言的共性，然后去学习它，比如简单的赋值的？简单的循环怎么写？简单的判断怎么写？等等，学会这些之后，在让自己陷入某个平台去学其它诸如Java这样的语言，至此，对赋值、循环等代码书写姿势也就好理解得多了。像是之前我学习Java web的时候，简单用tomcat搞个http server，都得配置不知所云的东东，而用nodejs之后，就很快明白，http server到底是什么了！反正，很多时候我只想快速的拿到这个结果，然后去理解这个过程！而不是像tomcat那样需要配置这样那样的东西，然后再拿到这样的结果。不管如何，你理解这个东西，总得有个整体认识才能更好地去理解这个东西。
+>
+> **知识零碎，需看整再深入……**
+>
+> **➹：**[如何开始学习计算机编程 - OSCHINA](https://www.oschina.net/translate/how-to-start-programming-for-free)
+>
+> **➹：**[编程语言入门的共性 - 知乎](https://zhuanlan.zhihu.com/p/28965128)
 
 ### ◇JS 引擎
 
