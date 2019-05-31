@@ -15,4 +15,6 @@
 ## ★目录
 
 - [01-nodejs入门](./01-入门/01-nodejs入门.md)
+- [02-自己做一个nodejs服务](./01-入门/02-自己做一个nodejs服务.md)
+- [03-Event Loop](./01-入门/03-event-loop.md)
 
