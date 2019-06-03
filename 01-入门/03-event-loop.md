@@ -26,7 +26,7 @@ typora-copy-images-to: img\03
 
 ### ◇什么是Nodejs？
 
-![1559273856706](img/03/1559273856706.png)
+![1559539773116](img/03/1559539773116.png)
 
 话说，nodejs和JavaScript是什么关系？
 
@@ -137,7 +137,7 @@ get('/1.json') //用JavaScript代码来请求一个网络模块(发送ajax请求
 
 假设我们要1s钟之后做一件事，即 `setTimeout(callback,1000)`，那么当JS引擎执行了这代码会做什么事呢？
 
-它会通知计时器模块，为了好表述，简称为通知chrome，让chrome来帮我们计时，那么它是如何计时的呢？不停地看到1s了没？到1s之后，就会通知JS引擎说「你改去执行callback了」
+它会通知计时器模块，为了好表述，简称为通知chrome，让chrome来帮我们计时，那么它是如何计时的呢？不停地看到1s了没？到1s之后，就会通知JS引擎说「你该去执行callback了」
 
 > 其实这个过程会把callback扔到任务队列里去排队，当call stack为空的时候，就会执行排头的那个callback，而此时JS引擎才会真正地执行callback
 
@@ -151,7 +151,182 @@ get('/1.json') //用JavaScript代码来请求一个网络模块(发送ajax请求
 
 ### ◇Event Loop
 
-回到Event Loop，
+回到 nodejs 的 Event Loop。注意，这是nodejs的event loop，可不是chrome的event loop（比较简单，一般不会讲解）
+
+nodejs的event loop就是用于实现JavaScript能去做异步的事情，但是这不是同时做多件事情，而是请操作系统去这些事情，至此，nodejs下的JavaScript同样具备所谓的同时做多件事情的能力！
+
+#### 概述
+
+我们知道JavaScript 是单线程的，但是有了 event loop 的加持，Node.js 才可以非阻塞地执行 I/O 操作，把这些操作尽量转移给操作系统来执行。
+
+我们知道大部分现代操作系统（内核，kernels）都是多线程的**，这些操作系统可以在后台执行多个操作**。当某个操作结束了，操作系统（内核）就会通知 Node.js，然后 Node.js 就（可能）会把对应的回调函数添加到 poll（轮询）队列，最终这些回调函数会被执行。
+
+#### 详解Event Loop
+
+![1559539573408](img/03/1559539573408.png)
+
+> 操作系统是怎么让我们的回调函数执行的？——肯定是发个消息说「文件读完了」，可是文件读完之后，谁来处理「文件读完了」这个信息呢？那就是Event Loop啦！
+>
+> 可以把操作系统看做是个对象，nodejs这个平台也是一个对象，event loop也是个对象，而面向对象的核心就是对象与对象之间交互，然后对象和对象可以直接通过消息传递来工作。
+>
+> 所以：
+>
+> 1. nodejs把「读取某个xx文件」的消息交给操作系统对象来做
+> 2. 操作系统对象把「文件读完了」这个消息交给Event Loop这个对象处理，处理好之后，就会把「callback」这个消息交给nodejs平台下的v8引擎对象去处理。
+
+当 Node.js 启动时，会做这几件事
+
+1. 初始化 event loop
+2. 开始执行脚本（或者进入 REPL，本文不涉及 REPL）。这些脚本有可能会调用一些异步 API、设定计时器或者调用 process.nextTick()
+3. 开始处理 event loop
+
+那么如何处理 event loop 呢？下图给出了一个简单的概览：
+
+```
+   ┌───────────────────────────┐
+┌─>│           timers          │
+│  └─────────────┬─────────────┘
+│  ┌─────────────┴─────────────┐
+│  │     pending callbacks     │
+│  └─────────────┬─────────────┘
+│  ┌─────────────┴─────────────┐
+│  │       idle, prepare       │
+│  └─────────────┬─────────────┘      ┌───────────────┐
+│  ┌─────────────┴─────────────┐      │   incoming:   │
+│  │           poll            │<─────┤  connections, │
+│  └─────────────┬─────────────┘      │   data, etc.  │
+│  ┌─────────────┴─────────────┐      └───────────────┘
+│  │           check           │
+│  └─────────────┬─────────────┘
+│  ┌─────────────┴─────────────┐
+└──┤      close callbacks      │
+   └───────────────────────────┘
+```
+
+注意：每个方框都是 event loop 中的一个阶段。
+
+> 把这个图看做是这样：
+>
+> ![1559539173745](img/03/1559539173745.png)
+>
+> chrome里边的event loop就是抽象成这样的：
+>
+> ![1546408455813](img/03/1546408455813.png)
+
+#### 各阶段概览
+
+- timers 阶段：这个阶段执行 setTimeout 和 setInterval 的回调函数。
+
+- I/O callbacks 阶段：不在 timers 阶段、close callbacks 阶段和 check 阶段这三个阶段执行的回调，都由此阶段负责，这几乎包含了所有回调函数。
+
+- idle, prepare 阶段（译注：看起来是两个阶段，不过这不重要）：event loop 内部使用的阶段（译注：我们不用关心这个阶段）
+
+- poll 阶段：获取新的 I/O 事件。在某些场景下 Node.js 会阻塞在这个阶段。
+
+- check 阶段：执行 setImmediate() 的回调函数。
+
+- close callbacks 阶段：执行关闭事件的回调函数，如 socket.on('close', fn) 里的 fn。
+
+> 看起来是6个阶段，其实是7个阶段，毕竟还有idle(空闲阶段)，prepare（准备阶段），不过我们可以直接把它们俩统一看作为event loop 内部使用的阶段。即把它们俩打包了一层！
+
+**一个 Node.js 程序结束时，Node.js 会检查 event loop 是否在等待异步 I/O （asynchronous I/O ）操作结束，是否在等待计时器（ timers ）触发，如果没有，就会关掉 event loop。**
+
+#### 我们关注的阶段
+
+只需要关注timers阶段、poll阶段（最重要的）以及check阶段。
+
+**①timers 阶段和poll阶段**
+
+看了下边这个代码，你就知道这两个阶段做了什么了：
+
+```js
+const fs = require('fs');
+
+function someAsyncOperation(callback) {
+  // 假设读取这个文件一共花费 95 毫秒
+  fs.readFile('/path/to/file', callback);
+}
+
+const timeoutScheduled = Date.now();
+
+setTimeout(() => {
+  const delay = Date.now() - timeoutScheduled;
+
+  console.log(`${delay}毫秒后执行了 setTimeout 的回调`);
+}, 100);
+
+
+// 执行一个耗时 95 毫秒的异步操作
+someAsyncOperation(() => {
+  const startCallback = Date.now();
+
+  // 执行一个耗时 10 毫秒的同步操作
+  while (Date.now() - startCallback < 10) {
+    // 什么也不做
+  }
+});
+
+```
+
+解释：
+
+![1559531158050](img/03/1559531158050.png)
+
+> 难道这仅仅只是告诉我setTimeout里边的callback执行，可以超时执行！
+
+我在想，假如刚好到了100ms，而此时操作系统刚好通知了poll，即push了一个callback进来，那么会先执行这个callback，还是回到timers阶段执行setTimeout里的callback呢？
+
+或者说假如poll里边的poll队列还有callback呢？于是做了追加了一次I/O操作：
+
+![1559532767697](img/03/1559532767697.png)
+
+> log了那么多次？这是个循环呀！只要小于10ms就会log，可是第一个I/O操作为啥不log呢？
+>
+> 你把它的10改为20就有了，可能log这个操作耗费了10ms，所以值看到了打印一次，而之后的log可能会有缓存之类的性能优化，导致log时间贼短。毕竟我们的log内容只改了一个「二」
+
+总之：
+
+poll阶段有两个主要功能，为了好记忆，直接限定死说它有两个功能：
+
+- 计算I/O的阻塞时间，然后处理poll队列里边的事件回调
+- 检查timer阶段里的计时器是否到点了，如果到点了，就绕回去执行它的callback
+
+当 event loop 进入 poll 阶段，且此时timer阶段的计时器还没有到点（**如果先到点了，那就先回去执行timer阶段里的计时器，不要想着「到点了，同时该阶段的poll 队列里边突然出现callback了」这种极端情况，因为微观上看总是会有先后的，或者会有轮询机制检查timers阶段，如2ms去检查计时器到点没？而这个2ms的间隙或许poll 队列来了callback，就会先去执行该poll队列里的callback了。等callback执行完，就会回到timers阶段执行计时器的callback。所以说这冲突是不存在的！**），那么就会发生以下两件事中的一件：
+
+1. 如果 poll 队列**不是空的**，event loop 就会依次执行队列里的回调函数，直到队列被清空或者到达 poll 阶段的时间上限。
+2. 如果 poll 队列是空的，就会： 
+   1. 如果有 setImmediate() 任务，event loop 就结束 poll 阶段去往 check 阶段。
+   2. 如果没有 setImmediate() 任务，event loop 就会等待新的回调函数进入 poll 队列，并立即执行它。
+
+一旦轮询队列（**poll** queue）为空，事件循环将检查 timers（计时器） 的时间阈值（*thresholds* ，临界值）是否已达到。如果一个或多个timers（计时器） 就绪，事件循环将回滚到**timers**阶段，以执行这些计时器的回调。
+
+> 我在想这个文件读取真的是95ms吗？因为我把setTimeout的延时设置了为20也行，只有0（4ms）是可以先执行它的。而且读取文件的路径乱写，也不会报错，毕竟我们的callback是自己写的，不是默认的 `(err,data)=>{}`
+>
+> 当我设置为0ms的延时之后，大概会在12ms之后执行这个callback。或许并没有所谓的优先级，只要某个阶段里的任务队列里边有callback，就会去依次执行，直到队列为空后，再去下一个阶段！
+
+
+
+
+
+## ★总结
+
+
+
+## ★Q&A
+
+### ①libuv？
+
+Node.js 用来实现 event loop 和所有异步行为的 C 语言写成的库
+
+![img](img/03/163a2447fcbaaf48)
+
+这个库的作用：
+
+**为了防止 poll 阶段占用了 event loop 的所有时间，libuv对 poll 阶段的最长停留时间做出了限制，具体时间因操作系统而异。**
+
+
+
+
 
 
 
