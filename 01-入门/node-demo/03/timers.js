@@ -18,13 +18,15 @@ setTimeout(() => {
   const delay = Date.now() - timeoutScheduled;
 
   console.log(`${delay}毫秒后执行了 setTimeout 的回调`);
-}, 0);
+}, 100);
 // 如果你设置为20,那么此时还没有timer队列里边还没有callback，于是继续往下走
+// 如果你设置为0的话，那么第一次进入timer阶段，99%的可能会执行它，除非你这个js文件写得内容太少了
 
 // 执行一个耗时 95 毫秒的异步操作
 someAsyncOperation(() => {
   const startCallback = Date.now();
-
+  // 测试该10ms闹钟是否先于100ms闹钟执行
+  setTimeout(()=>{console.log('我是第二个setTimeout callback')},10)
   // 执行一个耗时 10 毫秒的同步操作
   while (Date.now() - startCallback < 20) {
     console.log('我是第一个耗时95ms')

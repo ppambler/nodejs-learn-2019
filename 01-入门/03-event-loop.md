@@ -153,7 +153,7 @@ get('/1.json') //用JavaScript代码来请求一个网络模块(发送ajax请求
 
 回到 nodejs 的 Event Loop。注意，这是nodejs的event loop，可不是chrome的event loop（比较简单，一般不会讲解）
 
-nodejs的event loop就是用于实现JavaScript能去做异步的事情，但是这不是同时做多件事情，而是请操作系统去这些事情，至此，nodejs下的JavaScript同样具备所谓的同时做多件事情的能力！
+nodejs的event loop就是用于实现JavaScript能去做异步的事情，但是这不是同时做多件事情，而是请操作系统去做这些事情，至此，nodejs下的JavaScript同样具备所谓的同时做多件事情的能力！
 
 #### 概述
 
@@ -234,6 +234,10 @@ nodejs的event loop就是用于实现JavaScript能去做异步的事情，但是
 #### 我们关注的阶段
 
 只需要关注timers阶段、poll阶段（最重要的）以及check阶段。
+
+![1559556357869](img/03/1559556357869.png)
+
+详解：[②](#er)
 
 **①timers 阶段和poll阶段**
 
@@ -323,6 +327,79 @@ Node.js 用来实现 event loop 和所有异步行为的 C 语言写成的库
 这个库的作用：
 
 **为了防止 poll 阶段占用了 event loop 的所有时间，libuv对 poll 阶段的最长停留时间做出了限制，具体时间因操作系统而异。**
+
+### <a id="er">②三个阶段的讲解？</a>
+
+面试一般都是只考这三个阶段
+
+每个阶段都会有一个对列，如timers阶段的就是timers队列，同理还有poll 队列、check队列等
+
+这些队列里边存放的是callback，即一个函数引用。那timers队列来说，你写了个 `setTimeout(callback，10)`
+
+那么就会把这个`callback`塞到timers队列里边去，同时会记下来这个函数什么时候应该被调用！到了调用时间就会被调用！没有到调用时间就会进入下一个阶段！
+
+然后一般会停留在poll这个阶段。
+
+poll这个阶段会干啥事情呢？——什么都干，只是不干timers和check要干的事情！比如操作系统说「文件读完了」，这个信息就是在el的poll阶段被接收！所以说poll阶段也叫轮询阶段，经常对操作系统说「操作系统老哥，你搞完了吗？你搞完了吗？」
+
+如果操作说「搞完了」，那么这个信息就会被放在poll队列中的第一位！
+
+然后poll就会处理这个「文件读完了」这个信息，然后把其中的数据给拿出来，然后把该数据放到对应的回调里边，即call一下这个函数！
+
+总之，**poll阶段主要用来处理所有的跟操作系统，比如说文件、网络请求等这样的操作！除了特别几个异步API以外，都不需要这个阶段去搞，**简单来说，就是有关这些操作的callback都是在这个阶段处理的，像是setTimeout、setInterval等API里边的callback则是交给timers阶段处理的！
+
+那么check 阶段又是处理什么的呢？它只处理一个API——setImmediate
+
+这个函数我们并没有在浏览器环境下的JavaScript里边看见过，它是一个特殊的计时器
+
+一般在面试的时候都会问「setTimeout和setImmediate哪个快？」——显然后者快！
+
+小结：
+
+1. timer阶段：专门处理setTimeout和setInterval的callback调用
+2. poll阶段：处理所有的
+3. check阶段：专门处理setImmediate的callback调用！
+
+> 之前了解到chrome的el，有宏任务和微任务，这两个任务都有一个队列，而且微任务的队列里的callback优先级要比宏任务里的高！即当微任务里的callback执行完毕后，才会执行宏任务里的callback！如果在执行宏任务里的callback过程中产生了微任务，那么一旦微任务里边出现callback，就会优先去执行这里边的callback，无须等待宏任务里边的callback是否还有剩余！换句话说就是，每次执行完一个callback都会去检查微任务里边有没有callback，没有的话，就去检查宏任务的……
+>
+> 这两个任务的相关API：
+>
+> ```js
+> macrotasks: setTimeout, setInterval, setImmediate, I/O, UI rendering
+> microtasks: process.nextTick, Promises, Object.observe(废弃), MutationObserver
+> ```
+>
+> 浏览器关注的微任务无非就是`Promise.then(s1,e1)`里的s1或e1这样的callback，像是setImmediate，浏览器是咩有实现这个API的！
+
+用法：
+
+el会依次进入6个阶段，其中会在poll阶段一直停留着，用于看看文件是否读完了，读完了之后就会调用callback
+
+详解这几个阶段：
+
+1. timers：依次看timers队列里的callback是否到时间 了，如果到时间了就执行，没到时间就会往下走！
+
+2.  pending callbacks ：来到这个阶段，就会做这个阶段要做的事情，不会停留
+
+3.  idle, prepare：同上
+
+4. poll：会停留在这个阶段，这个阶段会做啥事情呢？会做两件事：
+
+   1. 会重复检查刚才的计时器是否到时间了（我觉得应该是检查timers队列有没有callback的存在，即队列里边是否有任务），如我们之前写了两个闹钟，一个4ms，一个100ms，第一个进入el，显然4ms已经就到了，那么timersd对列里边就会有它的callback，然后就会执行这个4ms的callback，然后就把该callback从timers队列里边清除，而100ms的callback显然还咩有在timers队列里边，而此时该timers队列为空，而且不会等待100ms这个callback，而是继续往下个阶段进行，直到停留在poll阶段，该阶段会不停地看100ms到了没。
+
+      > 芳芳的解释是，按照4ms、100ms这样先把callback push到timers队列里边去，就像这样：
+      >
+      > ![1559565609886](img/03/1559565609886.png)
+      >
+      > 可是问题来了，假设我们读取文件的callback，同样使用setTimeout，而且这个闹钟假如是小于100ms就执行的，那么它的callback会先于100ms的callback执行吗？按照上图的说法，显然会先把它扔到timers队列的末尾去吧！于是我测试了一下，结果发现哪个闹钟先到规定的时间，就会把它的callback扔到timers队列里边去，而不是一开始就把callback扔到timers队列里边去。至于poll阶段应该是不停地检查timers阶段的timers队列是否有callback存在！如果有，就得兜一圈回去执行它！直到该timers队列空空如也，才会继续往下个阶段前进！
+      >
+      > 另一种理解姿势：
+      >
+      > ![1559567258749](img/03/1559567258749.png)
+
+   2. 
+
+
 
 
 
