@@ -308,15 +308,101 @@ poll阶段有两个主要功能，为了好记忆，直接限定死说它有两�
 >
 > 当我设置为0ms的延时之后，大概会在12ms之后执行这个callback。或许并没有所谓的优先级，只要某个阶段里的任务队列里边有callback，就会去依次执行，直到队列为空后，再去下一个阶段！
 
+**➹：**[Event Loop、计时器、nextTick - 掘金](https://juejin.im/post/5ab7677f6fb9a028d56711d0#heading-12)
+
+**➹：**[深入解析node事件环原理 - 掘金](https://juejin.im/post/5b0ac7b151882538a2403f42#heading-0)
+
+**➹：**[The Node.js Event Loop, Timers, and process.nextTick() - Node.js](https://nodejs.org/en/docs/guides/event-loop-timers-and-nexttick/)
+
 ## ★MacroTask v.s. MicroTask
 
+接下来，来讲讲这两个家伙，这两个家伙读音差不多！
 
+为了更好地记忆这两个任务，我们把它们分别叫做Ma任务和Mi任务，组合在一起就是MaMi，妈咪！
 
+回过头来说它们俩，一个叫宏任务，一个叫微任务
 
+它们俩有啥区别呢？之前我们讲el时，并咩有涉及它们俩，因为这两个东西跟el没啥关系呀！
+
+既然没有关系，那么它们是哪来的概念呢？——来自于ES5规范呀！
+
+这个规范里说到有些任务是Ma任务，有些则是Mi任务
+
+那么我们之前讲到的el又是什么呢？它不是ES规范里写的东西，它是nodejs里边使用c语言所写的代码呀！
+
+那么MaMi任务与el真得没有关系吗？
+
+要说没有关系的话，肯定是假的，关系是有，但不大！比如说MaMi这两个东西肯定是通过el来实现的！而实现的区别就是大家是用哪个API来实现的！
+
+先来说说Ma任务：
+
+有哪些API是属于Ma任务的呢？
+
+- `script`（全局任务，全局函数中的同步任务）、setTimeout、setInterval、 setImmediate、 I/O、 UI渲染
+
+假设我们有这样一份代码：
+
+```js
+console.log(1)
+setTimeout(callback,0) //简称为timer
+```
+
+你说setTimeout里的callback会放到哪里执行呢？
+
+显然是放到Ma任务队列里边
+
+假如这个callback里边也有个timer，那么timer一到点，同样，会把其中的callback放到Ma任务队列里边去！
+
+假如这个callback里边有个`process.nextTick(callback1)`，那么该callback1就会被放到Mi任务队列里边去！
+
+> 视屏里说同步任务也放到Ma任务里边执行，但我目前认为不是这样的！因为callback的执行，肯定是通过el去把代码push到v8 的call stack执行呀！
+>
+> 而MaMi任务队列里边存放的显然是一个个callback对吧！而不是一个无厘头的语句！
+>
+> 视屏里说到先执行宏任务，然后再执行微任务，如果宏任务是可以存储同步代码的，那么显然宏任务必然是先执行的，但是这样的解释就有点无厘头了。当然，这种「理解」会比较快速理解哪个callback先执行！
+>
+> 确实是先执行宏任务，因为有个全局任务！
+
+除了nextTick属于微任务以外，promise也属于Mi任务，而且这是最容易被问到的！
+
+直接看一道题目：
+
+> **➹：**[Tasks, microtasks, queues and schedules - JakeArchibald.com](https://jakearchibald.com/2015/tasks-microtasks-queues-and-schedules/)
+
+![1559626590835](img/03/1559626590835.png)
+
+注意：当同步任务执行完毕后，就会先去看Mi任务里的东西，如第一个`Promise.then()`，然后根据它可以知道我们应该把那个callback（成功预案还是失败预案） push到JS的call stack里执行，然后，该call stack里的callback结果返回了一个undefined，然后发现还有一个then，于是又push了一个`Promise.then()`到Mi任务里边去，然后就是清空这个callstack了，然后原先第一次进入Mi任务里的`Promise.then()`就会被移除掉，后来的 `Promise.then()`取代了它的位置。
+
+既然Mi任务里边还有 `Promise.then`（知道把那个预案push到callstack里执行，因为有状态变化呀！），那就执行它的callback呗！该callback执行完后，callstack清空，Mi任务清空，目前只剩下在Ma任务的timer了，假如此刻有**Render task**的话，那么会优先执行它的任务，执行完毕后，才会去执行Ma任务里的timer。
+
+> 此刻理解的task优先级：Mi>Render>Ma。
+>
+> 关于Render task，用于更新UI渲染，然而「更新UI渲染」会根据浏览器的逻辑，决定要不要马上执行更新。毕竟更新 `UI` 成本大，所以，一般都会比较长的时间间隔，执行一次更新，最优的选择是16.6ms！所以这一步可能会错过，然后直接执行Ma里的任务！
+>
+> 还有不要把callback写得简洁点，不要写那么多代码！
+>
+> **➹：**[浏览器渲染过程及JS引擎浅析 – Clloz-素直になれない](https://www.clloz.com/programming/front-end/js/2019/04/25/how-browser-work/#i-10)
+
+改一下题目：
+
+![1559629667033](img/03/1559629667033.png)
+
+> ![1559629825672](img/03/1559629825672.png)
+
+解析：
+
+1. 先执行Ma任务（主任务，Run script，它的生命周期——等到所有Mi任务都执行完毕后，它才会从Ma任务队列里边被移除掉），即当前js文件的所有同步代码，而这其中添加了一个Ma任务（`timer`），一个Mi任务（`promise.then`）
+2. 执行Mi任务，然而执行Mi任务的callback过程又产生了一个Mi任务，于是又继续执行Mi任务，直到没有Mi任务，才会进入下一轮（粗暴理解就是把Promise里的then里的callback依次添加到Mi任务，当然这种粗暴不合理啊！因为你无法确定第一个then的callback执行完毕后，然后第二个then会选择哪个callback执行哈！）
+3. 更新UI渲染（有可能会跳过，这得看浏览器！目前我认为这是不可控因素！）
+4. 回到Ma任务，清掉主任务，然后执行timer这个任务
+5. GG
+
+好了，目前为止，你应该明白这log顺序是如何来的吧！
 
 ## ★总结
 
-
+- chrome有它的event loop，nodejs也有它的event loop
+- 关于MaMi任务的解释，最好的是nodejs下的JavaScript。因为有些API，浏览器是没有的，比如setImmediate、process.nextTick……
 
 ## ★Q&A
 
@@ -511,7 +597,46 @@ el会依次进入6个阶段，其中会在poll阶段一直停留着，用于看�
 
 **➹：**[困惑很久的一个问题!这句话“这就是为什么...的原因”是病句吗?“这就是为什么.._作业帮](https://www.zybang.com/question/23e600451d9b3e89fe8cf0672278490c.html)
 
+### ⑤nextTick的妙用？
 
+没有nextTick之前：
+
+```js
+let bar;
+
+// 这是一个异步 API，但是却同步地调用了 callback
+function someAsyncApiCall(callback) { callback(); }
+
+//`someAsyncApiCall` 在执行过程中就调用了回调
+someAsyncApiCall(() => {
+  // 此时 bar 还没有被赋值为 1
+  console.log('bar', bar); // undefined
+});
+
+bar = 1;
+
+```
+
+有nextTick之后：（这就是nextTick为啥被设计出来的原因！）
+
+```js
+let bar;
+
+function someAsyncApiCall(callback) {
+  process.nextTick(callback);
+}
+
+someAsyncApiCall(() => {
+  console.log('bar', bar); // 1
+});
+
+bar = 1;
+
+```
+
+你可以看到我们通过nextTick把someAsyncApiCall变成 了一个伪异步。
+
+毕竟其中的callback是在js文件执行完毕后再去调用的！
 
 
 
