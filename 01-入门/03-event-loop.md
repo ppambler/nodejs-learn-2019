@@ -308,6 +308,8 @@ poll阶段有两个主要功能，为了好记忆，直接限定死说它有两�
 >
 > 当我设置为0ms的延时之后，大概会在12ms之后执行这个callback。或许并没有所谓的优先级，只要某个阶段里的任务队列里边有callback，就会去依次执行，直到队列为空后，再去下一个阶段！
 
+## ★MacroTask v.s. MicroTask
+
 
 
 
@@ -445,17 +447,53 @@ el会依次进入6个阶段，其中会在poll阶段一直停留着，用于看�
 
    ![1559581007890](img/03/1559581007890.png)
 
-5. check阶段
+5. check阶段：不知你有咩有发现，每次由poll到timer的过程都会经过check，所以这就是**setImmediate总是要比setTimeout先执行**的原因所在。毕竟我们要先去执行setImmediate的callback哈！
 
+   代码示例：
 
+   ![1559608617243](img/03/1559608617243.png)
 
+   > 如果 setTimeout 和 setImmediate 都是在主模块（main module）中被调用的，那么回调的执行顺序取决于当前进程的性能，这个性能受其他应用程序进程的影响。（不可控因素）
 
+   所以说这两个回调的执行顺序是无法判断的，即便上边的例子看起来像是setImmediate总比setTimeout先执行！用图来解释一下：
 
+   ![1559609548029](img/03/1559609548029.png)
 
+   > 我们无法预料脚本结束到进入el这段时间是多少，可是即便可以预料，但是我们在执行脚本的时候，遇到setTimeout这个API时，其实就已经在计时了，如果剩余的脚本代码执行只要了2ms，而进入el只要了1ms，那么第一次经历timer阶段，显然timer 队列里边是咩有callback的！
 
+   如果脚本执行结束，到进入el的一瞬间如果是小于4ms的话，那么就是setImmediate先执行了。
 
+   ![1559609668905](img/03/1559609668905.png)
 
+   需要注意的是，不同el实现可能不一样哦！如chrome的el实现！
 
+   总之大部分情况下都是setImmediate先执行！除了第一个进入timer的时候。
+
+   如果我想100%确保setImmediate先执行呢？那这该如何做呢？
+
+   如果你把上面代码放到 I/O 操作的回调里，那么setImmediate 的回调就总是优先于 setTimeout 的回调：
+
+   ![1559610438608](img/03/1559610438608.png)
+
+   > 我们无法预测某个callback到底是多少ms之后就执行的，我们只能确定哪个callback先执行，哪个callback后执行。
+
+6. nextTick()
+
+   这个名字我们在vue里边见过！但是浏览器没有这个API。
+
+   它不属于el里边6个阶段中的任何一个，类似于超脱五行之外。简单来说，它就不是el的一部分！
+
+   不管 event loop 当前处于哪个阶段，nextTick 队列都是在当前阶段后就被执行了。
+
+   总之，不管哪个阶段都会去先执行nextTick。这是为什么呢？因为API就是这样设计的，没有为什么！
+
+   理论上来说，nextTick会先于所有的回调执行！
+
+   ![1559611247383](img/03/1559611247383.png)
+
+   可见，进入el之前就会执行它！不管你是把nextTick这份代码放到整个js文件的最后边，还是最前边，都会如此！
+
+   总之，nextTick永远先于immediate和setTimeout，而immediate和setTimeout，一般来说是immediate先，只有一种情况下setTimeout先，那就是第一个启动el，而且有点慢的情况下就会先执行setTimeout。反之，如果启动很快且js文件的执行很短，那么setTimeout总是会比immediate后执行。
 
 ### ③typescript能在node环境下运行吗？
 
@@ -465,7 +503,13 @@ el会依次进入6个阶段，其中会在poll阶段一直停留着，用于看�
 
 **➹：**[使用typescript开发node js - 简书](https://www.jianshu.com/p/0e37a793ac3a)
 
+### ④这就是为什么...的原因？病句？
 
+> 本来先想写「这就是为什么setImmediate总是要比setTimeout先执行的原因」
+
+是病句,“这就是”是一个陈诉因的助词,而最后“的原因”也是,重复了.就好像,“我为什么之所以”一样,重复了~!
+
+**➹：**[困惑很久的一个问题!这句话“这就是为什么...的原因”是病句吗?“这就是为什么.._作业帮](https://www.zybang.com/question/23e600451d9b3e89fe8cf0672278490c.html)
 
 
 
